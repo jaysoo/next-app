@@ -1,0 +1,23 @@
+@tailwind base;
+
+/*! purgecss start ignore */
+@import 'nx-dev/feature-search/src/lib/algolia-search.global.css';
+@import 'highlight.js/styles/github-gist.css';
+/*! purgecss end ignore */
+
+@tailwind components;
+@tailwind utilities;
+
+svg {
+  shape-rendering: crispEdges;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+  Code embed
+ */
+.prose pre {
+  background: inherit !important;
+  color: inherit !important;
+  border: 1px solid #e1e4e8;
+}

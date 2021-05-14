@@ -1,0 +1,45 @@
+{
+  "implicitDependencies": {
+    "package.json": {
+      "dependencies": "*",
+      "devDependencies": "*"
+    },
+    ".eslintrc.json": "*"
+  },
+  "affected": {
+    "defaultBase": "master"
+  },
+  "workspaceLayout": {
+    "libsDir": "",
+    "appsDir": ""
+  },
+  "npmScope": "nx-next",
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "@nrwl/workspace/tasks-runners/default",
+      "options": {
+        "cacheableOperations": ["build", "lint", "test", "e2e"]
+      }
+    }
+  },
+  "projects": {
+    "nx-dev": {
+      "tags": ["scope:nx-dev", "type:app"]
+    },
+    "nx-dev-e2e": {
+      "tags": ["scope:nx-dev", "type:e2e"],
+      "implicitDependencies": ["nx-dev"]
+    },
+    "nx-dev-ui-common": {
+      "tags": ["scope:nx-dev", "type:ui"]
+    },
+    "nx-dev-feature-doc-viewer": {
+      "tags": ["scope:nx-dev", "type:feature"]
+    },
+    "nx-dev-data-access-documents": {
+      "tags": ["scope:nx-dev", "type:data-access"]
+    },
+    "nx-dev-data-access-menu": { "tags": ["scope:nx-dev", "type:data-access"] },
+    "nx-dev-feature-search": { "tags": ["scope:nx-dev", "type:feature"] }
+  }
+}
