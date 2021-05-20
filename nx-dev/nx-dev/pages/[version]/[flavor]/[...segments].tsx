@@ -1,72 +1,64 @@
-import * as React from 'react';
-import { useRouter } from 'next/router';
-import {
-  flavorList,
-  getDocument,
-  getStaticDocumentPaths,
-  getVersions,
+import type {
+  DocumentData,
+  Menu,
+  VersionMetadata,
 } from '@nrwl/nx-dev/data-access-documents';
+import { flavorList } from '@nrwl/nx-dev/data-access-documents';
+import { DocViewer } from '@nrwl/nx-dev/feature-doc-viewer';
+
+import { documentsApi, menuApi } from '../../../lib/api';
 
 interface DocumentationProps {
-  version: any;
+  version: VersionMetadata;
   flavor: { label: string; value: string };
   flavors: { label: string; value: string }[];
-  versions: any[];
-  menu: any;
-  document?: any;
-  error?: any;
+  versions: VersionMetadata[];
+  menu: Menu;
+  document?: DocumentData;
 }
 
 interface DocumentationParams {
   params: { version: string; flavor: string; segments: string | string[] };
 }
 
-export function Documentation({ document, error }: DocumentationProps) {
-  const router = useRouter();
-  if (router.isFallback || !document) {
-    return <h1>FALLBACK</h1>;
-  } else {
-    return <h1>FOUND</h1>;
-  }
+export function Documentation({
+  document,
+  menu,
+  version,
+  versions,
+  flavor,
+  flavors,
+}: DocumentationProps) {
+  return (
+    <DocViewer
+      version={version}
+      versionList={versions}
+      flavor={flavor}
+      flavorList={flavors}
+      document={document}
+      menu={menu}
+      toc={null}
+    />
+  );
 }
+
+const defaultVersion = {
+  name: 'Preview',
+  id: 'preview',
+  path: 'preview',
+} as VersionMetadata;
+
+const defaultFlavor = {
+  label: 'React',
+  value: 'react',
+};
 
 export async function getStaticProps({ params }: DocumentationParams) {
-  const { versions, version, flavor, menu, document } = await getProps({
-    params,
-  });
-
-  if (document) {
-    return {
-      props: {
-        version: null as any,
-        flavor: null as any,
-        flavors: null as any,
-        versions: null as any,
-        menu: null as any,
-        document,
-      },
-    };
-  } else {
-    console.log('>>> redirect', JSON.stringify(params));
-    return {
-      props: {
-        version: null as any,
-        flavor: null as any,
-        flavors: null as any,
-        versions: null as any,
-        menu: null as any,
-        document: document || null,
-      },
-    };
-  }
-}
-
-async function getProps({ params }: DocumentationParams) {
-  let versions: any[];
-  let version: any;
+  let versions: VersionMetadata[];
+  let version: VersionMetadata;
   let flavor: { label: string; value: string };
-  let menu: any;
-  let document: any;
+  let menu: Menu;
+  let document: DocumentData;
 
   /*
    * Try to find the document matching segments. If the document isn't found, then:
@@ -75,50 +67,45 @@ async function getProps({ params }: DocumentationParams) {
    * - Otherwise, redirect to the root.
    */
   try {
-    versions = null as any;
-    version = null as any;
-    flavor = null as any;
-    menu = null as any;
-    document = getDocument(params.version, [params.flavor, ...params.segments]);
+    versions = documentsApi.getVersions();
+    version =
+      versions.find((item) => item.id === params.version) || defaultVersion;
+    flavor =
+      flavorList.find((item) => item.value === params.flavor) || defaultFlavor;
+    menu = menuApi.getMenu(params.version, params.flavor);
+    document = documentsApi.getDocument(params.version, [
+      params.flavor,
+      ...params.segments,
+    ]);
 
     return {
-      version,
-      flavor,
-      flavors: flavorList,
-      versions: versions,
-      menu,
-      document,
-      error: null,
+      props: {
+        version,
+        flavor,
+        flavors: flavorList,
+        versions: versions,
+        menu,
+        document,
+      },
     };
-  } catch (e) {
-    console.log('>>> ERROR', e);
+  } catch {
+    const firstPagePath = menu?.sections[0].itemList?.[0].itemList?.[0].path;
     return {
-      version: null,
-      versions: null,
-      flavors: null,
-      flavor: null,
-      menu: null,
-      document: null,
-      error: e,
+      redirect: {
+        destination: firstPagePath ?? '/',
+        permanent: false,
+      },
     };
   }
-
-  return {
-    version: null,
-    versions: null,
-    flavors: null,
-    flavor: null,
-    menu: null,
-    document: document || null,
-    error: 'fallback',
-  };
 }
 
 export async function getStaticPaths(props) {
-  const versions = ['preview'].concat(getVersions().map((x) => x.id));
+  const versions = ['preview'].concat(
+    documentsApi.getVersions().map((x) => x.id)
+  );
 
   const allPaths = versions.reduce((acc, v) => {
-    acc.push(...getStaticDocumentPaths(v));
+    acc.push(...documentsApi.getStaticDocumentPaths(v));
     return acc;
   }, []);
 
@@ -129,7 +116,7 @@ export async function getStaticPaths(props) {
      * 1. The content of the document if it exists.
      * 2. A redirect to another page if document is not found.
      */
-    fallback: true,
+    fallback: 'blocking',
   };
 }
 
