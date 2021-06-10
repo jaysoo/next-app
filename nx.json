@@ -24,7 +24,8 @@
   },
   "projects": {
     "nx-dev": {
-      "tags": ["scope:nx-dev", "type:app"]
+      "tags": ["scope:nx-dev", "type:app"],
+      "implicitDependencies": ["docs"]
     },
     "nx-dev-e2e": {
       "tags": ["scope:nx-dev", "type:e2e"],
@@ -39,6 +40,14 @@
     "nx-dev-data-access-documents": {
       "tags": ["scope:nx-dev", "type:data-access"]
     },
-    "nx-dev-feature-search": { "tags": ["scope:nx-dev", "type:feature"] }
+    "nx-dev-feature-search": {
+      "tags": ["scope:nx-dev", "type:feature"]
+    },
+    "docs": {
+      "tags": ["scope:nx-dev"]
+    },
+    "nx-dev-feature-analytics": {
+      "tags": ["scope:nx-dev", "type:feature"]
+    }
   }
 }
