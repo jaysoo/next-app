@@ -268,7 +268,7 @@ export async function getStaticProps({
 
 export async function getStaticPaths() {
   const allPaths = versionList.flatMap((v) => {
-    const paths = documentsApi.getStaticDocumentPaths(v.id);
+    let paths = documentsApi.getStaticDocumentPaths(v.id);
 
     // Use `/latest/react` as the default path if version and flavor not provided.
     // Make sure to set `isFallback: true` on the static props of these paths so
@@ -287,7 +287,7 @@ export async function getStaticPaths() {
         '>>> generic paths',
         genericPaths.map((x) => x.params.segments.join('/')).join('\n')
       );
-      paths.concat(genericPaths);
+      paths = paths.concat(genericPaths);
     } else {
       console.log('>>> regular ');
     }
