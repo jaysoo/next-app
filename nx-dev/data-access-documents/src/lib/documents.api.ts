@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
 import { join, relative } from 'path';
 import matter from 'gray-matter';
-import { readJsonFile } from '@nrwl/workspace';
 import {
   archiveRootPath,
   extractTitle,
@@ -29,21 +28,23 @@ export class DocumentsApi {
     return this.versions;
   }
 
-  getDocument(version: string, _segments: string | string[]): DocumentData {
-    const segments = Array.isArray(_segments) ? [..._segments] : [_segments];
-    const docPath = this.getFilePath(version, segments);
+  getDocument(
+    versionId: string,
+    flavorId: string,
+    path: string[]
+  ): DocumentData {
+    const docPath = this.getFilePath(versionId, flavorId, path);
     const originalContent = readFileSync(docPath, 'utf8');
     const file = matter(originalContent);
 
     // Set default title if not provided in front-matter section.
     if (!file.data.title) {
-      file.data.title =
-        extractTitle(originalContent) ?? segments[segments.length - 1];
+      file.data.title = extractTitle(originalContent) ?? path[path.length - 1];
     }
 
     return {
       filePath: relative(
-        version === 'preview' ? previewRootPath : archiveRootPath,
+        versionId === 'preview' ? previewRootPath : archiveRootPath,
         docPath
       ),
       data: file.data,
@@ -53,15 +54,11 @@ export class DocumentsApi {
   }
 
   getDocuments(version: string) {
-    try {
-      let list = this.documentsMap.get(version);
-      if (!list) {
-        list = readJsonFile(join(this.getDocumentsRoot(version), 'map.json'));
-        this.documentsMap.set(version, list);
-      }
-      return list;
-    } catch {
-      throw new Error(`Cannot find map.json for ${version}`);
+    const docs = this.documentsMap.get(version);
+    if (docs) {
+      return docs;
+    } else {
+      throw new Error(`Cannot find documents for ${version}`);
     }
   }
 
@@ -73,16 +70,13 @@ export class DocumentsApi {
         curr.itemList.forEach((ii) => {
           recur(ii, [...acc, curr.id]);
         });
-        return;
+      } else {
+        paths.push({
+          params: {
+            segments: [version, ...acc, curr.id],
+          },
+        });
       }
-
-      paths.push({
-        params: {
-          version,
-          flavor: acc[0],
-          segments: acc.slice(1).concat(curr.id),
-        },
-      });
     }
 
     this.getDocuments(version).forEach((item) => {
@@ -107,20 +101,25 @@ export class DocumentsApi {
     throw new Error(`Cannot find root for ${version}`);
   }
 
-  private getFilePath(version: string, segments: string[]): string {
-    let items = this.getDocuments(version);
+  private getFilePath(versionId, flavorId, path): string {
+    let items = this.getDocuments(versionId).find(
+      (item) => item.id === flavorId
+    )?.itemList;
+
+    if (!items) {
+      throw new Error(`Document not found`);
+    }
+
     let found;
-    for (const segment of segments) {
-      found = items.find((item) => item.id === segment);
+    for (const part of path) {
+      found = items.find((item) => item.id === part);
       if (found) {
         items = found.itemList;
       } else {
-        throw new Error(
-          `Cannot find document matching segments: ${JSON.stringify(segments)}`
-        );
+        throw new Error(`Document not found`);
       }
     }
-    const file = found.file ?? segments.join('/');
-    return join(this.getDocumentsRoot(version), `${file}.md`);
+    const file = found.file ?? [flavorId, ...path].join('/');
+    return join(this.getDocumentsRoot(versionId), `${file}.md`);
   }
 }

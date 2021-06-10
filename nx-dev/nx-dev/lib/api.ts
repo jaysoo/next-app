@@ -13,23 +13,32 @@ import latestDocuments from '../public/documentation/latest/map.json';
 import archiveVersionsData from '../public/documentation/versions.json';
 
 export function loadDocumentsData(): Map<string, DocumentMetadata[]> {
-  return new Map([
-    ['preview', previewDocuments],
-    ['latest', latestDocuments],
-    ['previous', previousDocuments],
-  ]);
+  const map = new Map<string, DocumentMetadata[]>();
+  map.set('latest', latestDocuments);
+  map.set('previous', previousDocuments);
+  if (process.env.VERCEL_ENV !== 'production') {
+    map.set('preview', previewDocuments);
+  }
+  return map;
 }
 
 export function loadVersionsData(): VersionMetadata[] {
-  // Manually add previews entry since we don't have it in the versions.json file.
-  return archiveVersionsData.concat({
-    name: 'preview',
-    id: 'preview',
-    release: 'preview',
-    path: 'preview',
-    default: false,
-  });
+  const versions: VersionMetadata[] = archiveVersionsData;
+  if (process.env.VERCEL_ENV !== 'production') {
+    versions.push({
+      name: 'Preview',
+      id: 'preview',
+      release: 'preview',
+      path: 'preview',
+      default: false,
+      hidden: true,
+    });
+  }
+  return versions;
 }
 
-export const documentsApi = new DocumentsApi(loadVersionsData(), loadDocumentsData());
+export const documentsApi = new DocumentsApi(
+  loadVersionsData(),
+  loadDocumentsData()
+);
 export const menuApi = new MenuApi(documentsApi);
