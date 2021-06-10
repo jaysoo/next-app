@@ -273,17 +273,23 @@ export async function getStaticPaths() {
     // Use `/latest/react` as the default path if version and flavor not provided.
     // Make sure to set `isFallback: true` on the static props of these paths so
     if (v.id === defaultVersion.id) {
-      paths.concat(
-        paths
-          .filter((path) => path.params.segments[1] === defaultFlavor.value)
-          .map((path) => ({
-            ...path,
-            params: {
-              ...path.params,
-              segments: path.params.segments.slice(2),
-            },
-          }))
+      console.log('>>> generic');
+      const genericPaths = paths
+        .filter((path) => path.params.segments[1] === defaultFlavor.value)
+        .map((path) => ({
+          ...path,
+          params: {
+            ...path.params,
+            segments: path.params.segments.slice(2),
+          },
+        }));
+      console.log(
+        '>>> generic paths',
+        genericPaths.map((x) => x.params.segments.join('/')).join('\n')
       );
+      paths.concat(genericPaths);
+    } else {
+      console.log('>>> regular ');
     }
 
     return paths;
